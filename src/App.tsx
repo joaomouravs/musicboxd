@@ -1,70 +1,90 @@
 import { useState } from 'react';
-
-// Importação dos Componentes Globais
 import { Navbar } from './components/Navbar';
 import { ReviewModal } from './components/ReviewModal';
+import { FloatingNotifications } from './components/FloatingNotifications';
 
-// Importação das Páginas
+// Importação de todas as páginas
+import { Auth } from './pages/Auth';
 import { Home } from './pages/Home';
 import { Explore } from './pages/Explore';
-import { Community } from './pages/Community'; // <-- A nossa nova página de Feed!
-import { Profile } from './pages/Profile';
-import { Album } from './pages/Album';
-
-// (Certifique-se de que estes ficheiros existem na pasta pages, mesmo que vazios)
+import { Community } from './pages/Community';
 import { TierList } from './pages/TierList';
 import { Battle } from './pages/Battle';
+import { Profile } from './pages/Profile';
+import { Album } from './pages/Album';
+import { Article } from './pages/Article'; // <-- A NOSSA NOVA REVISTA DE IA AQUI!
 
 export function App() {
-  // Estado que controla qual página o utilizador está a ver
-  const [currentRoute, setCurrentRoute] = useState('home');
-  
-  // Estado global para o modal de avaliação
+  // Estados globais da aplicação
+  const [currentRoute, setCurrentRoute] = useState('auth');
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  
+  // O "Cérebro" que guarda o álbum que o utilizador escolheu
+  const [selectedAlbum, setSelectedAlbum] = useState<any>(null);
 
-  // Função para renderizar a aba correta
+  // Esconde a Navbar e as Notificações na tela de Login/Cadastro
+  const showNavigation = currentRoute !== 'auth';
+
+  // Função especial que guarda o álbum e muda a página ao mesmo tempo
+  const handleSelectAlbum = (album: any) => {
+    setSelectedAlbum(album);
+    setCurrentRoute('album');
+  };
+
+  // Roteador manual que decide qual página mostrar
   const renderPage = () => {
     switch (currentRoute) {
-      case 'home':
-        // Passamos o onNavigate para a Home para podermos clicar num disco e ir para o Álbum
-        return <Home onNavigate={setCurrentRoute} />;
-      case 'explore':
-        return <Explore />;
-      case 'community':
+      case 'auth': 
+        return <Auth onNavigate={setCurrentRoute} />;
+      case 'home': 
+        return <Home onNavigate={setCurrentRoute} onSelectAlbum={handleSelectAlbum} />;
+      case 'explore': 
+        return <Explore onNavigate={setCurrentRoute} onSelectAlbum={handleSelectAlbum} />;
+      case 'community': 
         return <Community />;
-      case 'profile':
-        return <Profile />;
-      case 'tierlist':
+      case 'tierlist': 
         return <TierList />;
-      case 'battle':
+      case 'battle': 
         return <Battle />;
-      case 'album':
-        return <Album />;
-      default:
-        return <Home onNavigate={setCurrentRoute} />;
+      case 'profile': 
+        return <Profile />;
+      case 'album': 
+        return <Album albumData={selectedAlbum} onNavigate={setCurrentRoute} />;
+      case 'article': 
+        return <Article onNavigate={setCurrentRoute} />; // <-- A ROTA DO ARTIGO AQUI!
+      default: 
+        return <Auth onNavigate={setCurrentRoute} />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-background text-white font-body selection:bg-accent/30">
+    <div className="min-h-screen bg-background text-white font-body selection:bg-accent/30 relative">
       
-      {/* A nossa Navbar que agora já controla todas as rotas */}
-      <Navbar 
-        currentRoute={currentRoute} 
-        onNavigate={setCurrentRoute} 
-        openReviewModal={() => setIsReviewModalOpen(true)} 
-      />
-      
-      {/* O conteúdo principal que muda consoante o menu */}
+      {/* Navegação de Topo (Oculta no Login) */}
+      {showNavigation && (
+        <Navbar 
+          currentRoute={currentRoute} 
+          onNavigate={setCurrentRoute} 
+          openReviewModal={() => setIsReviewModalOpen(true)} 
+        />
+      )}
+
+      {/* Conteúdo Dinâmico da Página Atual */}
       <main className="animate-in fade-in duration-500">
         {renderPage()}
       </main>
 
-      {/* O nosso Modal Global que sobrepõe qualquer página */}
-      {isReviewModalOpen && (
-        <ReviewModal onClose={() => setIsReviewModalOpen(false)} />
-      )}
+      {/* Modal de Escrever Resenha (Sobrepõe tudo) */}
+      <ReviewModal 
+        isOpen={isReviewModalOpen} 
+        onClose={() => setIsReviewModalOpen(false)} 
+      />
+
+      {/* Sino de Notificações Lateral (Oculto no Login) */}
+      {showNavigation && <FloatingNotifications />}
       
     </div>
   );
 }
+
+export default App;

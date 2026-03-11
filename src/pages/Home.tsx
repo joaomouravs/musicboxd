@@ -1,201 +1,329 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { getNewReleases } from '../services/api';
 import { 
-  BarChart3, Target, Zap, 
-  Disc3, SlidersHorizontal, UserPlus, ShieldAlert,
-  PlayCircle, CheckCircle2, TrendingUp, Sparkles,
-  History
+  Heart, MessageSquare, Share2, Star, Disc3, 
+  Flame, PlayCircle, MoreHorizontal, Sparkles,
+  Coffee, Target, BarChart, UserCheck, Crown, History, Box, Loader
 } from 'lucide-react';
 
-// 1. Interface que permite à Home receber a função de mudar de página
 interface HomeProps {
-  onNavigate?: (route: string) => void;
+  onNavigate: (route: string) => void;
+  onSelectAlbum: (album: any) => void;
 }
 
-export function Home({ onNavigate }: HomeProps) {
-  // Estado para o Mood Slider
-  const [moodLevel, setMoodLevel] = useState(50);
-  
-  // Estado para o Scroll Camaleão (Fundo muda com o hover)
-  const [themeColor, setThemeColor] = useState('from-background to-background');
+export function Home({ onNavigate, onSelectAlbum }: HomeProps) {
+  const [spotifyReleases, setSpotifyReleases] = useState<any[]>([]);
+  const [isLoadingAPI, setIsLoadingAPI] = useState(true);
+  const [activeTab, setActiveTab] = useState('global');
 
-  const getMoodText = () => {
-    if (moodLevel < 30) return "Zona de Conforto";
-    if (moodLevel > 70) return "Descoberta Selvagem";
-    return "Equilíbrio Perfeito";
+  const [isDigging, setIsDigging] = useState(false);
+  const [dugAlbum, setDugAlbum] = useState<any>(null);
+
+  // BUSCAR DADOS REAIS AO SPOTIFY
+  useEffect(() => {
+    async function fetchSpotify() {
+      setIsLoadingAPI(true);
+      const releases = await getNewReleases();
+      setSpotifyReleases(releases);
+      setIsLoadingAPI(false);
+    }
+    fetchSpotify();
+  }, []);
+
+  // FUNÇÃO DO "CAIXOTE" (Com imagem segura)
+  const handleDigCrate = () => {
+    setIsDigging(true);
+    setDugAlbum(null);
+    setTimeout(() => {
+      setDugAlbum({
+        name: "Madvillainy",
+        artists: [{ name: "Madvillain" }],
+        images: [{ url: "https://images.unsplash.com/photo-1493225457124-a1a2a5f5f4b5?w=300&q=80" }],
+        release_date: "2004",
+      });
+      setIsDigging(false);
+    }, 1500);
   };
 
+  // DADOS DA COMUNIDADE (Com imagens seguras do Unsplash)
+  const communityFeed = [
+    {
+      id: 101,
+      user: "@marina_sounds",
+      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80",
+      album: "In Rainbows",
+      artist: "Radiohead",
+      cover: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=300&q=80",
+      rating: 5,
+      text: "Dez anos depois e este álbum continua a soar como se tivesse vindo do futuro. A percussão em 'Weird Fishes' é a prova de que a perfeição existe. Escuta obrigatória para quem gosta de texturas analógicas.",
+      likes: 342,
+      comments: 45,
+      time: "Há 2 horas",
+      mockData: { name: "In Rainbows", artists: [{ name: "Radiohead" }], images: [{ url: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=300&q=80" }] }
+    },
+    {
+      id: 102,
+      user: "@joaovux",
+      avatar: "https://i.pravatar.cc/150?img=11",
+      album: "Discovery",
+      artist: "Daft Punk",
+      cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&q=80",
+      rating: 4.5,
+      text: "A transição de 'Aerodynamic' para 'Digital Love' mudou a minha química cerebral. O ápice do French Touch.",
+      likes: 128,
+      comments: 12,
+      time: "Há 5 horas",
+      mockData: { name: "Discovery", artists: [{ name: "Daft Punk" }], images: [{ url: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&q=80" }] }
+    }
+  ];
+
   return (
-    <main className={`w-full min-h-screen transition-colors duration-1000 bg-gradient-to-b ${themeColor} pb-24 md:pb-12`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-6 md:py-12 flex flex-col gap-8 md:gap-12">
+    <main className="w-full min-h-screen pb-24 pt-8 bg-background">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col gap-8">
+        
+        {/* HEADER DO FEED */}
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-heading font-black text-white tracking-tight">Feed Global</h1>
+            <p className="text-secondary text-sm mt-1">Descubra o que a comunidade está a ouvir hoje.</p>
+          </div>
+          <div className="flex bg-surface border border-white/10 p-1 rounded-full w-fit">
+            <button onClick={() => setActiveTab('following')} className={`px-6 py-2 rounded-full text-xs font-bold transition-all ${activeTab === 'following' ? 'bg-white/10 text-white' : 'text-secondary hover:text-white'}`}>A Seguir</button>
+            <button onClick={() => setActiveTab('global')} className={`px-6 py-2 rounded-full text-xs font-bold transition-all shadow-lg ${activeTab === 'global' ? 'bg-accent text-white' : 'text-secondary hover:text-white'}`}>Global</button>
+          </div>
+        </header>
 
-        {/* ========================================================= */}
-        {/* 1. HERO: DNA Sonoro + Audio-Reativo + Ecossistema         */}
-        {/* ========================================================= */}
-        <section className="relative w-full h-[350px] md:h-[450px] rounded-3xl overflow-hidden border border-white/10 flex items-center justify-center group shadow-2xl">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(99,102,241,0.15),_transparent_70%)] opacity-80" />
+        {/* LAYOUT EM GRELHA */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
           
-          {/* Visualizador Audio-Reativo */}
-          <div className="absolute bottom-0 w-full flex items-end justify-center gap-1 px-4 md:px-10 opacity-20 group-hover:opacity-40 transition-opacity">
-            {[...Array(window.innerWidth < 768 ? 30 : 60)].map((_, i) => (
-              <div 
-                key={i} 
-                className="w-full bg-accent rounded-t-full animate-pulse" 
-                style={{ 
-                  height: `${Math.random() * 80 + 20}px`, 
-                  animationDuration: `${Math.random() * 0.8 + 0.5}s`,
-                  animationDelay: `${Math.random() * 2}s` 
-                }} 
-              />
-            ))}
-          </div>
+          {/* ================= COLUNA PRINCIPAL ================= */}
+          <div className="xl:col-span-2 flex flex-col gap-8">
+            
+            {/* SPOTIFY RADAR */}
+            <section className="bg-gradient-to-r from-surface to-indigo-950/30 border border-white/5 rounded-[2rem] p-6 shadow-xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Sparkles size={100} /></div>
+              <div className="flex items-center gap-2 mb-6 relative z-10">
+                <Disc3 className="text-accent animate-[spin_3s_linear_infinite]" size={20} />
+                <h2 className="text-lg font-heading font-black text-white">Radar Spotify: Lançamentos</h2>
+              </div>
 
-          {/* O Ecossistema (Órbitas) */}
-          <div className="relative z-10 w-full h-full flex items-center justify-center scale-75 md:scale-100">
-            <div className="relative w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-accent shadow-[0_0_60px_rgba(99,102,241,0.5)] z-20 overflow-hidden">
-              <img src="https://images.unsplash.com/photo-1618609377864-6a5f65ce5737?q=80&w=200&auto=format&fit=crop" className="w-full h-full object-cover" alt="Sua Foto" />
-            </div>
-
-            <div className="absolute w-[280px] h-[280px] md:w-[320px] md:h-[320px] border border-white/5 rounded-full animate-[spin_25s_linear_infinite]" />
-            <div className="absolute w-[400px] h-[400px] md:w-[500px] md:h-[500px] border border-white/5 rounded-full animate-[spin_40s_linear_infinite_reverse]" />
-
-            {/* Amigos em Órbita */}
-            <div className="absolute top-10 left-[20%] md:left-[30%] group/planet cursor-pointer z-30">
-              <img src="https://upload.wikimedia.org/wikipedia/en/2/2e/In_Rainbows_Official_Cover.jpg" className="w-10 h-10 md:w-14 md:h-14 rounded-full border-2 border-white/20 hover:scale-125 transition-transform" alt="Friend" />
-            </div>
-            <div className="absolute bottom-20 right-[15%] md:right-[25%] group/planet cursor-pointer z-30">
-              <img src="https://upload.wikimedia.org/wikipedia/en/a/a0/Blonde_-_Frank_Ocean.jpeg" className="w-12 h-12 md:w-16 md:h-16 rounded-full border-2 border-white/20 hover:scale-125 transition-transform" alt="Friend" />
-            </div>
-          </div>
-
-          <div className="absolute top-6 left-6 flex items-center gap-2 text-white/30 text-[10px] font-heading font-bold uppercase tracking-[0.2em]">
-            <Sparkles size={14} className="text-accent" /> DNA Sonoro v1.0
-          </div>
-        </section>
-
-        {/* ========================================================= */}
-        {/* 2. JUKEBOX REATIVA                                        */}
-        {/* ========================================================= */}
-        <section className="w-full max-w-xl mx-auto -mt-16 md:-mt-24 relative z-40 bg-surface/60 backdrop-blur-xl border border-white/10 p-6 md:p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-4">
-          <div className="flex items-center gap-2 text-white font-heading font-black italic text-sm md:text-base">
-            <SlidersHorizontal size={18} className="text-accent" /> JUKEBOX REATIVA
-          </div>
-          
-          <div className="w-full">
-            <input 
-              type="range" min="0" max="100" 
-              value={moodLevel} onChange={(e) => setMoodLevel(Number(e.target.value))} 
-              className="w-full h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-accent" 
-            />
-            <div className="flex justify-between mt-3">
-               <span className="text-[9px] uppercase font-bold text-secondary tracking-widest">Conforto</span>
-               <span className="text-xs md:text-sm font-heading font-bold text-accent animate-pulse">{getMoodText()}</span>
-               <span className="text-[9px] uppercase font-bold text-secondary tracking-widest">Caos</span>
-            </div>
-          </div>
-        </section>
-
-        {/* ========================================================= */}
-        {/* 3. DASHBOARD                                              */}
-        {/* ========================================================= */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-          <div className="bg-surface border border-white/5 rounded-2xl p-6 relative overflow-hidden group">
-            <BarChart3 className="absolute -right-6 -bottom-6 w-24 h-24 text-accent/5 group-hover:scale-110 transition-transform" />
-            <div className="flex items-center gap-2 text-accent mb-3"><Zap size={16} fill="currentColor" /><h3 className="text-[10px] font-bold uppercase tracking-widest">Mini-Wrapped</h3></div>
-            <p className="text-3xl font-heading font-black text-white">Top 3%</p>
-            <p className="text-xs text-secondary font-body mt-1">Ouvinte de elite de <strong>Tyler, The Creator</strong>.</p>
-          </div>
-
-          <div className="bg-surface border border-white/5 rounded-2xl p-6 relative overflow-hidden group">
-             <Target className="absolute -right-6 -bottom-6 w-24 h-24 text-accent/5 group-hover:rotate-12 transition-transform" />
-             <div className="flex items-center gap-2 text-accent mb-3"><TrendingUp size={16} /><h3 className="text-[10px] font-bold uppercase tracking-widest">Tastemaker</h3></div>
-             <p className="text-3xl font-heading font-black text-white">42</p>
-             <p className="text-xs text-secondary font-body mt-1">Novas conexões geradas pelas suas resenhas.</p>
-          </div>
-
-          <div className="bg-gradient-to-br from-indigo-900/10 to-surface border border-white/5 rounded-2xl p-6 relative overflow-hidden group">
-             <History size={18} className="text-indigo-400 mb-3" />
-             <p className="text-[10px] text-secondary font-bold uppercase mb-2 tracking-widest">Cápsula do Tempo</p>
-             <div className="flex items-center gap-3 bg-black/40 p-2 rounded-xl border border-white/5">
-                <img src="https://upload.wikimedia.org/wikipedia/en/a/ae/Daft_Punk_-_Discovery.jpg" className="w-10 h-10 rounded" alt="History" />
-                <div className="flex flex-col"><span className="text-xs font-bold text-white">Discovery</span><span className="text-[9px] text-accent uppercase">Há 1 ano</span></div>
-             </div>
-          </div>
-        </div>
-
-        {/* ========================================================= */}
-        {/* 4. MISSÕES E AFINIDADE                                    */}
-        {/* ========================================================= */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-          <div className="bg-gradient-to-r from-yellow-900/10 to-surface border border-yellow-500/20 rounded-2xl p-6 md:p-8 flex items-center justify-between group">
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-2 text-yellow-500 mb-1"><ShieldAlert size={16} /><h3 className="text-[10px] font-bold uppercase tracking-widest">Bounty Board</h3></div>
-              <h4 className="text-xl font-heading font-black text-white">Mestre de Bristol</h4>
-              <p className="text-xs text-secondary font-body max-w-[200px] md:max-w-xs">Avalie álbuns de Trip-Hop para ganhar recompensas.</p>
-              <div className="w-32 md:w-48 bg-black/40 h-1.5 rounded-full mt-3 overflow-hidden"><div className="bg-yellow-500 w-[66%] h-full" /></div>
-            </div>
-            <Disc3 size={48} className="text-yellow-500/20 group-hover:rotate-180 transition-transform duration-1000" />
-          </div>
-
-          <div className="bg-surface border border-white/5 rounded-2xl p-6 md:p-8 flex items-center gap-4 md:gap-6">
-            <div className="flex -space-x-3">
-              <img src="https://i.pravatar.cc/100?u=1" className="w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-surface shadow-lg" alt="User 1"/>
-              <img src="https://i.pravatar.cc/100?u=2" className="w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-surface shadow-lg" alt="User 2"/>
-            </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2 text-pink-500"><UserPlus size={16} /><h3 className="text-[10px] font-bold uppercase tracking-widest">Afinidade</h3></div>
-              <p className="text-xs md:text-sm text-primary font-body mt-1"><strong>@marina_sounds</strong> combina 94% com você.</p>
-            </div>
-          </div>
-        </div>
-
-        {/* ========================================================= */}
-        {/* 5. CAIXOTE DE VINIS 3D                                    */}
-        {/* ========================================================= */}
-        <section className="flex flex-col gap-6 pt-6 border-t border-white/5">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-2">
-            <div>
-              <h2 className="text-2xl md:text-3xl font-heading font-black text-white italic">O CAIXOTE</h2>
-              <p className="text-xs md:text-sm text-secondary font-body">Sua prateleira física com curadoria inteligente.</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-8">
-            {[
-              { title: "IGOR", artist: "Tyler", cover: "https://upload.wikimedia.org/wikipedia/en/5/51/Igor_-_Tyler%2C_the_Creator.jpg", color: "from-pink-900/30" },
-              { title: "RAM", artist: "Daft Punk", cover: "https://upload.wikimedia.org/wikipedia/en/a/a7/Random_Access_Memories.jpg", color: "from-blue-900/30" },
-              { title: "Brat", artist: "Charli xcx", cover: "https://upload.wikimedia.org/wikipedia/en/thumb/e/ef/Charli_XCX_-_Brat.png/220px-Charli_XCX_-_Brat.png", color: "from-lime-900/30" },
-              { title: "DAMN.", artist: "Kendrick", cover: "https://upload.wikimedia.org/wikipedia/en/5/51/Kendrick_Lamar_-_Damn.png", color: "from-red-900/30" },
-              { title: "Discovery", artist: "Daft Punk", cover: "https://upload.wikimedia.org/wikipedia/en/a/ae/Daft_Punk_-_Discovery.jpg", color: "from-yellow-900/30" }
-            ].map((album, i) => (
-              <div 
-                key={i} 
-                onMouseEnter={() => setThemeColor(album.color)}
-                onMouseLeave={() => setThemeColor('from-background to-background')}
-                // 2. A MAGIA ACONTECE AQUI: Navegar para a página do álbum ao clicar!
-                onClick={() => onNavigate && onNavigate('album')}
-                className="group relative perspective-[1000px] cursor-pointer h-56 md:h-72 flex flex-col items-center justify-end"
-              >
-                <div className="hidden md:flex absolute w-[90%] aspect-square rounded-full bg-[#111] border-[4px] border-[#222] shadow-inner top-0 transition-all duration-500 transform-gpu group-hover:-translate-y-16 group-hover:rotate-12 z-10 items-center justify-center">
-                   <div className="w-1/3 h-1/3 rounded-full border border-white/5 overflow-hidden opacity-40"><img src={album.cover} className="w-full h-full object-cover blur-sm" /></div>
+              {isLoadingAPI ? (
+                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                  {[1, 2, 3, 4].map((skeleton) => (
+                    <div key={skeleton} className="min-w-[140px] flex flex-col gap-3 animate-pulse">
+                      <div className="w-full aspect-square bg-white/5 rounded-2xl" />
+                      <div className="w-3/4 h-4 bg-white/5 rounded" />
+                      <div className="w-1/2 h-3 bg-white/5 rounded" />
+                    </div>
+                  ))}
                 </div>
-
-                <div className="relative w-full aspect-square rounded-xl shadow-xl md:shadow-2xl transition-all duration-500 transform-gpu group-hover:rotate-x-12 md:group-hover:-translate-y-4 group-hover:scale-105 z-20 border border-white/10 overflow-hidden bg-surface">
-                   <img src={album.cover} className="w-full h-full object-cover" alt={album.title} />
-                   <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                      <PlayCircle size={24} className="text-white hover:text-accent transition-colors" />
-                      <CheckCircle2 size={24} className="text-white hover:text-green-500 transition-colors" />
-                   </div>
+              ) : spotifyReleases.length > 0 ? (
+                <div className="flex overflow-x-auto pb-4 gap-4 scrollbar-hide snap-x">
+                  {spotifyReleases.map((album) => (
+                    <div key={album.id} onClick={() => onSelectAlbum(album)} className="min-w-[140px] max-w-[140px] flex flex-col gap-3 snap-start group cursor-pointer">
+                      <div className="relative overflow-hidden rounded-2xl aspect-square shadow-lg border border-white/10 group-hover:border-accent/50 transition-colors">
+                        {/* Imagens Reais do Spotify! */}
+                        <img src={album.images[0]?.url || album.images[1]?.url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={album.name} />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"><PlayCircle size={32} className="text-white" /></div>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-white truncate group-hover:text-accent transition-colors">{album.name}</h3>
+                        <p className="text-[10px] text-secondary truncate">{album.artists[0]?.name}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
+              ) : (
+                <p className="text-sm text-secondary">Nenhum lançamento encontrado no momento.</p>
+              )}
+            </section>
 
-                <div className="mt-3 text-center group-hover:opacity-40 transition-opacity">
-                   <p className="text-[11px] md:text-sm font-bold text-white leading-tight truncate w-full px-1">{album.title}</p>
-                   <p className="text-[9px] text-secondary font-body uppercase tracking-tighter">{album.artist}</p>
+            {/* BOUNTY BOARD */}
+            <section className="bg-gradient-to-br from-amber-950/40 to-surface border border-amber-500/30 rounded-[2rem] p-6 shadow-xl relative overflow-hidden group">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2 text-amber-500">
+                  <Target size={20} />
+                  <h2 className="text-lg font-heading font-black">Bounty Board</h2>
+                </div>
+                <span className="text-[10px] bg-amber-500/20 text-amber-400 font-bold px-2 py-1 rounded-full uppercase tracking-wider">Missão Semanal</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <img src="https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=300&q=80" className="w-16 h-16 rounded-xl shadow-lg border border-amber-500/20 object-cover" alt="Brat" />
+                <div className="flex-1">
+                  <h3 className="text-white font-bold">Procura-se: Resenhas Críticas</h3>
+                  <p className="text-xs text-secondary mt-1">A comunidade precisa de mais 12 resenhas detalhadas para estabelecer o consenso de 'BRAT'.</p>
+                </div>
+                <button className="bg-amber-500 text-black hover:bg-amber-400 px-4 py-2 rounded-full font-black text-xs transition-colors shadow-[0_0_15px_rgba(245,158,11,0.3)]">
+                  REIVINDICAR XP
+                </button>
+              </div>
+            </section>
+
+            {/* FEED DA COMUNIDADE */}
+            <div className="flex flex-col gap-6">
+              <div className="flex items-center gap-2 mb-2">
+                <Flame className="text-orange-500" size={20} />
+                <h2 className="text-lg font-heading font-black text-white">Em Alta na Comunidade</h2>
+              </div>
+              {communityFeed.map((review) => (
+                <article key={review.id} className="bg-surface border border-white/5 rounded-[2rem] p-6 shadow-xl hover:border-white/10 transition-colors">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center gap-3 cursor-pointer">
+                      <img src={review.avatar} className="w-12 h-12 rounded-full border border-white/10 object-cover" alt="Avatar"/>
+                      <div>
+                        <h4 className="text-base font-bold text-white hover:text-accent transition-colors">{review.user}</h4>
+                        <span className="text-xs text-secondary">{review.time}</span>
+                      </div>
+                    </div>
+                    <button className="text-secondary hover:text-white p-2"><MoreHorizontal size={20} /></button>
+                  </div>
+                  <div onClick={() => onSelectAlbum(review.mockData)} className="bg-black/40 border border-white/5 rounded-2xl p-4 flex gap-4 cursor-pointer hover:bg-black/60 hover:border-white/20 transition-all mb-4 group">
+                    <img src={review.cover} className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl shadow-lg object-cover group-hover:scale-105 transition-transform duration-300" alt={review.album} />
+                    <div className="flex flex-col justify-center flex-1 overflow-hidden">
+                      <h3 className="text-lg sm:text-xl font-black text-white truncate group-hover:text-accent transition-colors">{review.album}</h3>
+                      <p className="text-sm text-secondary truncate">{review.artist}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <div className="flex text-yellow-500">
+                          {[...Array(Math.floor(review.rating))].map((_, i) => <Star key={i} size={14} fill="currentColor"/>)}
+                          {review.rating % 1 !== 0 && <Star size={14} fill="currentColor" className="opacity-50"/>}
+                        </div>
+                        <span className="text-xs font-bold text-white bg-white/10 px-2 py-0.5 rounded-md">{review.rating}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-white/80 text-base leading-relaxed mb-6 font-body">{review.text}</p>
+                  <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                    <div className="flex gap-6">
+                      <button className="flex items-center gap-2 text-secondary hover:text-red-400 transition-colors font-bold text-sm"><Heart size={18} /> {review.likes}</button>
+                      <button className="flex items-center gap-2 text-secondary hover:text-blue-400 transition-colors font-bold text-sm"><MessageSquare size={18} /> {review.comments}</button>
+                    </div>
+                    <button className="text-secondary hover:text-white transition-colors"><Share2 size={18} /></button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+
+          {/* ================= COLUNA LATERAL (WIDGETS) ================= */}
+          <aside className="flex flex-col gap-6">
+            
+            {/* JUKEBOX */}
+            <div className="bg-gradient-to-b from-indigo-900/50 to-surface border border-indigo-500/30 p-6 rounded-[2rem] shadow-xl text-center relative overflow-hidden">
+              <div className="flex items-center justify-center gap-2 text-indigo-300 text-xs font-black uppercase tracking-widest mb-4">
+                <Coffee size={16} /> Manhã em Belford Roxo
+              </div>
+              <div className="w-24 h-24 mx-auto bg-black rounded-full border-4 border-indigo-500/50 flex items-center justify-center relative mb-4">
+                 <div className="w-full h-full rounded-full border border-indigo-400/20 absolute animate-[spin_4s_linear_infinite]" style={{ borderStyle: 'dashed' }} />
+                 <div className="w-8 h-8 bg-indigo-500/20 rounded-full" />
+              </div>
+              <h3 className="text-white font-black text-lg">A Jukebox da Cidade</h3>
+              <p className="text-xs text-secondary mt-1 mb-4">Sintonizada com a aura matinal. Um toque de MPB e Neo-Soul.</p>
+              <button className="w-full bg-indigo-500 hover:bg-indigo-400 text-white py-3 rounded-xl font-bold text-sm transition-colors shadow-[0_0_20px_rgba(99,102,241,0.3)]">
+                SINCRONIZAR VIBE
+              </button>
+            </div>
+
+            {/* MINI WRAPPED */}
+            <div className="bg-surface border border-white/5 p-6 rounded-[2rem] shadow-xl">
+              <div className="flex items-center gap-2 mb-4">
+                <BarChart className="text-green-400" size={20} />
+                <h2 className="text-lg font-heading font-black text-white">Mini Wrapped</h2>
+              </div>
+              <div className="flex flex-col gap-3">
+                <div className="bg-black/40 p-3 rounded-xl flex justify-between items-center border border-white/5">
+                  <span className="text-xs text-secondary font-bold">Tempo de Escuta</span>
+                  <span className="text-white font-black">14.2 Horas</span>
+                </div>
+                <div className="bg-black/40 p-3 rounded-xl flex justify-between items-center border border-white/5">
+                  <span className="text-xs text-secondary font-bold">Top Género</span>
+                  <span className="text-green-400 font-black text-sm bg-green-500/10 px-2 py-1 rounded-md">Post-Punk</span>
                 </div>
               </div>
-            ))}
-          </div>
-        </section>
+            </div>
 
+            {/* O CAIXOTE */}
+            <div className="bg-surface border border-white/5 p-6 rounded-[2rem] shadow-xl relative group">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2 text-pink-500">
+                  <Box size={20} />
+                  <h2 className="text-lg font-heading font-black text-white">O Caixote</h2>
+                </div>
+              </div>
+              <p className="text-xs text-secondary mb-4">Mergulhe os dedos no pó e encontre uma joia obscura aleatória.</p>
+              
+              {!dugAlbum ? (
+                <button 
+                  onClick={handleDigCrate}
+                  disabled={isDigging}
+                  className="w-full border-2 border-dashed border-pink-500/50 hover:border-pink-500 hover:bg-pink-500/10 text-pink-400 py-6 rounded-2xl font-black transition-all flex flex-col items-center justify-center gap-2"
+                >
+                  {isDigging ? <Loader className="animate-spin" size={24} /> : <Box size={24} />}
+                  {isDigging ? "A GARIMPAR..." : "GARIMPAR VINIL"}
+                </button>
+              ) : (
+                <div className="animate-in zoom-in duration-300 flex flex-col items-center text-center">
+                  <img 
+                    src={dugAlbum.images[0].url} 
+                    onClick={() => onSelectAlbum(dugAlbum)}
+                    className="w-32 h-32 rounded-xl shadow-[0_0_30px_rgba(236,72,153,0.3)] mb-3 cursor-pointer hover:scale-105 transition-transform object-cover" 
+                    alt="Dug Album"
+                  />
+                  <h3 className="text-white font-black text-sm">{dugAlbum.name}</h3>
+                  <p className="text-xs text-secondary mb-3">{dugAlbum.artists[0].name}</p>
+                  <button onClick={() => setDugAlbum(null)} className="text-[10px] text-secondary hover:text-white underline">Garimpar outro</button>
+                </div>
+              )}
+            </div>
+
+            {/* AFINIDADE */}
+            <div className="bg-gradient-to-br from-fuchsia-950/30 to-surface border border-fuchsia-500/30 p-6 rounded-[2rem] shadow-xl">
+               <div className="flex items-center gap-2 mb-4">
+                 <UserCheck className="text-fuchsia-400" size={20} />
+                 <h2 className="text-lg font-heading font-black text-white">Sincronia Perfeita</h2>
+               </div>
+               <div className="flex items-center gap-4 bg-black/40 p-3 rounded-xl border border-white/5">
+                 <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=100&q=80" className="w-12 h-12 rounded-full border-2 border-fuchsia-500 object-cover" alt="User" />
+                 <div className="flex-1">
+                   <h3 className="text-white font-bold text-sm">@vinyl_head</h3>
+                   <p className="text-xs text-secondary">Afinidade Sonora: <span className="text-fuchsia-400 font-black">94%</span></p>
+                 </div>
+               </div>
+            </div>
+
+            {/* TASTEMAKER */}
+            <div className="bg-surface border border-white/5 p-6 rounded-[2rem] shadow-xl">
+               <div className="flex items-center justify-between mb-4">
+                 <div className="flex items-center gap-2">
+                   <Crown className="text-yellow-500" size={20} />
+                   <h2 className="text-lg font-heading font-black text-white">Tastemaker</h2>
+                 </div>
+               </div>
+               <p className="text-xs text-white/80 italic mb-3 border-l-2 border-yellow-500 pl-3">
+                 "A produção neste projeto redefiniu o que consideramos Pop Eletrónico em 2024."
+               </p>
+               <div className="flex items-center gap-2">
+                 <img src="https://i.pravatar.cc/150?img=5" className="w-6 h-6 rounded-full" alt="Curator" />
+                 <span className="text-xs font-bold text-secondary">@curator_x</span>
+               </div>
+            </div>
+
+            {/* CÁPSULA DO TEMPO */}
+            <div className="bg-surface border border-white/5 p-6 rounded-[2rem] shadow-xl opacity-80 hover:opacity-100 transition-opacity">
+               <div className="flex items-center gap-2 mb-4">
+                 <History className="text-blue-400" size={20} />
+                 <h2 className="text-lg font-heading font-black text-white">Cápsula do Tempo</h2>
+               </div>
+               <div className="flex gap-3 items-center">
+                 <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&q=80" className="w-12 h-12 rounded-md object-cover" alt="Time Capsule" />
+                 <div>
+                   <p className="text-xs text-secondary">Exatamente há 1 ano,</p>
+                   <p className="text-sm font-bold text-white">Você deu 5★ a isto.</p>
+                 </div>
+               </div>
+            </div>
+
+          </aside>
+        </div>
       </div>
     </main>
   );

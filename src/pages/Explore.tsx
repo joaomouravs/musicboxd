@@ -1,473 +1,391 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { searchSpotify, getNewReleases } from '../services/api';
 import { 
-  Sparkles, CloudMoon, Zap, HelpCircle, 
-  Wind, Radio, Users, FlaskConical, ChevronRight,
-  Trophy, Flame, Swords, ArrowRight, GitMerge, Star,
-  Crown, Activity, PlayCircle, Headphones, Ticket, TrendingUp,
-  Network, Database, GitCommit, ArrowDown, MoveRight
+  Search, TrendingUp, TrendingDown, Zap, FlaskConical, 
+  Radio, Flame, ArrowRight, Shuffle, Disc3, AlertTriangle, 
+  Sun, ListMusic, GitCommit, BookOpen, Activity, PlayCircle,
+  Sparkles, Target, Calendar, Layers, Star, Plus, CheckCircle2, Bot 
 } from 'lucide-react';
 
-export function Explore() {
-  const [activeTab, setActiveTab] = useState('descobrir'); 
-  const [isRevealed, setIsRevealed] = useState(false);
+interface ExploreProps {
+  onNavigate: (route: string) => void;
+  onSelectAlbum: (album: any) => void;
+}
 
-  const tabs = [
-    { id: 'descobrir', label: 'Descobrir', icon: Sparkles },
-    { id: 'social', label: 'Social & Feed', icon: Users },
-    { id: 'aovivo', label: 'Ao Vivo', icon: Radio },
-    { id: 'lab', label: 'O Laboratório', icon: FlaskConical },
+export function Explore({ onNavigate, onSelectAlbum }: ExploreProps) {
+  // --- ESTADOS DA API ---
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [radarReleases, setRadarReleases] = useState<any[]>([]);
+  const [isLoadingRadar, setIsLoadingRadar] = useState(true);
+
+  // --- ESTADOS DE INTERAÇÃO (Botões Menores) ---
+  const [toastMessage, setToastMessage] = useState('');
+  const [activeHotTake, setActiveHotTake] = useState(0);
+  const [comfortZoneBroken, setComfortZoneBroken] = useState(false);
+  const [isMixing, setIsMixing] = useState(false);
+  const [mixedResult, setMixedResult] = useState(false);
+  const [timeYear, setTimeYear] = useState(1991);
+  const [pathRevealed, setPathRevealed] = useState(0);
+
+  // Função para dar feedback visual em todos os botões pequenos
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(''), 3000);
+  };
+
+  // 1. EFEITO: Pesquisa Dinâmica do Spotify (Debounce)
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    const delaySearch = setTimeout(async () => {
+      setIsSearching(true);
+      const data = await searchSpotify(searchQuery);
+      if (data && data.albums && data.albums.items) {
+        setSearchResults(data.albums.items);
+      } else {
+        setSearchResults([]);
+      }
+      setIsSearching(false);
+    }, 500);
+    return () => clearTimeout(delaySearch);
+  }, [searchQuery]);
+
+  // 2. EFEITO: Carregar o Radar de Lançamentos com dados reais do Spotify
+  useEffect(() => {
+    async function loadRadar() {
+      setIsLoadingRadar(true);
+      const releases = await getNewReleases();
+      setRadarReleases(releases);
+      setIsLoadingRadar(false);
+    }
+    loadRadar();
+  }, []);
+
+  // 3. EFEITO: Hot Takes (Radar ao Vivo)
+  const hotTakes = [
+    "🚨 @marina_sounds deu 0.5★ a Abbey Road: 'Apenas uma boyband glorificada.'",
+    "🔥 @lucas_dev deu 5★ à OST do Shrek: 'Produção imaculada e atemporal.'",
+    "⚠️ @joaovux abaixou a nota de RAM do Daft Punk para 2.5★."
   ];
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveHotTake((prev) => (prev + 1) % hotTakes.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [hotTakes.length]);
+
+  // --- DADOS MOCKADOS (Com Imagens HD do Unsplash e Gatilhos Prontos) ---
+  const hypeMarket = [
+    { id: 1, title: "BRAT", artist: "Charli XCX", cover: "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=300&q=80", trend: "up", percent: "+420%", mockData: { name: "BRAT", artists: [{ name: "Charli XCX" }], images: [{ url: "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=300&q=80" }] } },
+    { id: 2, title: "The Rise and Fall...", artist: "Chappell Roan", cover: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=300&q=80", trend: "up", percent: "+215%", mockData: { name: "The Rise and Fall...", artists: [{ name: "Chappell Roan" }], images: [{ url: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=300&q=80" }] } },
+    { id: 3, title: "Vultures 1", artist: "Kanye West", cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&q=80", trend: "down", percent: "-85%", mockData: { name: "Vultures 1", artists: [{ name: "Kanye West" }], images: [{ url: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&q=80" }] } },
+  ];
+
+  const joiaPerdidaData = { name: "Long Season", artists: [{ name: "Fishmans" }], images: [{ url: "https://images.unsplash.com/photo-1493225457124-a1a2a5f5f4b5?w=300&q=80" }] };
+  const quebraBolhasData = { name: "Fleet Foxes", artists: [{ name: "Fleet Foxes" }], images: [{ url: "https://images.unsplash.com/photo-1448375240586-882707db888b?w=300&q=80" }] };
+  const alquimiaData = { name: "Sunbather", artists: [{ name: "Deafheaven" }], images: [{ url: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=300&q=80" }] };
+  const nesteDiaData = { name: "The Joshua Tree", artists: [{ name: "U2" }], images: [{ url: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=300&q=80" }] };
+
   return (
-    <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-8 md:py-12 flex flex-col gap-8">
+    <main className="w-full min-h-screen pb-24 pt-8 bg-background overflow-x-hidden relative">
       
-      {/* CABEÇALHO E NAVEGAÇÃO POR ABAS */}
-      <header className="flex flex-col gap-6 border-b border-white/5 pb-4">
-        <div>
-          <h1 className="text-3xl md:text-5xl font-heading font-black text-primary tracking-tight mb-2">
-            Explorar
-          </h1>
-          <p className="text-secondary font-body text-base md:text-lg">
-            Navegue por sensações, fuja do algoritmo e descubra o inesperado.
-          </p>
+      {/* TOAST SYSTEM (Feedback visual para os botões) */}
+      {toastMessage && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] bg-accent text-white px-6 py-3 rounded-full font-black text-sm flex items-center gap-2 shadow-[0_0_30px_rgba(99,102,241,0.5)] animate-in slide-in-from-top-4 fade-in duration-300">
+          <CheckCircle2 size={18} /> {toastMessage}
         </div>
+      )}
 
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-body text-sm font-medium transition-all whitespace-nowrap ${
-                  isActive 
-                    ? 'bg-accent text-white shadow-[0_0_15px_rgba(99,102,241,0.4)]' 
-                    : 'bg-surface border border-white/5 text-secondary hover:text-primary hover:bg-white/5'
-                }`}
-              >
-                <Icon size={16} />
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
-      </header>
-
-      {/* ========================================= */}
-      {/* ABA 1: DESCOBRIR                          */}
-      {/* ========================================= */}
-      {activeTab === 'descobrir' && (
-        <div className="flex flex-col gap-12 md:gap-16 animate-in fade-in duration-500">
-          
-          <section className="relative w-full rounded-2xl md:rounded-3xl overflow-hidden bg-surface border border-white/10 p-6 md:p-10 flex flex-col md:flex-row items-center gap-8 group">
-            <div className="absolute inset-0 opacity-40 pointer-events-none bg-gradient-to-br from-[#1e1b4b] via-[#312e81] to-[#0f172a]" />
-            <div className="relative flex-1">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-bold font-heading uppercase tracking-wider mb-4 border border-indigo-500/30">
-                <CloudMoon size={14} /> Vibe de Domingo à Noite
-              </div>
-              <h2 className="text-3xl md:text-4xl font-heading font-bold text-white mb-2">Para fechar o fim de semana</h2>
-              <p className="text-indigo-200/80 font-body text-sm md:text-base max-w-xl mb-6">
-                O amanhã já espreita. Desacelere a mente com batidas *downtempo*, R&B noturno e texturas de Jazz criadas para as altas horas da noite.
-              </p>
-              <button className="bg-indigo-500 hover:bg-indigo-400 text-white px-6 py-3 rounded-full font-bold font-body text-sm transition-all shadow-lg shadow-indigo-500/20">
-                Ouvir a Seleção Noturna
-              </button>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 flex flex-col gap-8">
+        
+        {/* HEADER & SEARCH REAL */}
+        <div className="flex flex-col gap-6">
+          <div className="relative w-full group z-50">
+            <div className="absolute inset-0 bg-accent/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative flex items-center bg-surface border border-white/10 rounded-full overflow-hidden focus-within:border-accent focus-within:shadow-[0_0_30px_rgba(99,102,241,0.3)] transition-all">
+              <div className="pl-6 text-accent"><Search size={24} /></div>
+              <input 
+                type="text" 
+                placeholder="Pesquise por álbuns de verdade no Spotify..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-transparent border-none py-5 px-4 text-sm md:text-lg font-heading font-bold text-white focus:outline-none placeholder:text-white/30"
+              />
             </div>
-            <div className="relative w-48 h-48 md:w-56 md:h-56 shrink-0 grid grid-cols-2 grid-rows-2 gap-2 rotate-3 group-hover:rotate-0 transition-transform duration-500">
-              <img src="https://upload.wikimedia.org/wikipedia/en/e/e2/Songs_in_the_key_of_life.jpg" className="w-full h-full object-cover rounded-tl-xl rounded-br-xl shadow-lg opacity-80 hover:opacity-100 transition-opacity" alt="Stevie" />
-              <img src="https://upload.wikimedia.org/wikipedia/en/2/2e/In_Rainbows_Official_Cover.jpg" className="w-full h-full object-cover rounded-tr-xl rounded-bl-xl shadow-lg opacity-80 hover:opacity-100 transition-opacity" alt="Radiohead" />
-            </div>
-          </section>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
-            <section className="flex flex-col gap-4">
-              <h2 className="text-xl md:text-2xl font-heading font-bold text-primary border-b border-white/5 pb-2">Aura Sonora</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 h-full">
-                <button className="flex flex-col items-center justify-center gap-3 p-4 rounded-2xl bg-surface/30 border border-white/5 hover:bg-white/5 transition-all group">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-red-600 to-orange-500 blur-[2px] group-hover:blur-md transition-all shadow-[0_0_20px_rgba(220,38,38,0.3)]" />
-                  <span className="font-heading text-xs uppercase font-bold text-primary group-hover:text-red-400">Energia Neon</span>
-                </button>
-                <button className="flex flex-col items-center justify-center gap-3 p-4 rounded-2xl bg-surface/30 border border-white/5 hover:bg-white/5 transition-all group">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-400 blur-[2px] group-hover:blur-md transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)]" />
-                  <span className="font-heading text-xs uppercase font-bold text-primary group-hover:text-blue-400">Melancolia</span>
-                </button>
-                <button className="flex flex-col items-center justify-center gap-3 p-4 rounded-2xl bg-surface/30 border border-white/5 hover:bg-white/5 transition-all group">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-green-500 to-emerald-700 blur-[2px] group-hover:blur-md transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)]" />
-                  <span className="font-heading text-xs uppercase font-bold text-primary group-hover:text-green-400">Orgânico</span>
-                </button>
-                <button className="flex flex-col items-center justify-center gap-3 p-4 rounded-2xl bg-surface/30 border border-white/5 hover:bg-white/5 transition-all group">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-purple-900 to-black blur-[2px] group-hover:blur-md transition-all shadow-[0_0_20px_rgba(88,28,135,0.3)]" />
-                  <span className="font-heading text-xs uppercase font-bold text-primary group-hover:text-purple-400">Sombrio</span>
-                </button>
-              </div>
-            </section>
-
-            <section className="flex flex-col gap-4">
-              <h2 className="text-xl md:text-2xl font-heading font-bold text-primary border-b border-white/5 pb-2">Teste Cego</h2>
-              <div className="flex bg-surface/40 border border-white/10 rounded-2xl p-4 md:p-6 gap-6 items-center h-full relative overflow-hidden">
-                <div className="relative w-32 h-32 md:w-40 md:h-40 shrink-0 rounded-xl overflow-hidden shadow-2xl">
-                  <img src="https://upload.wikimedia.org/wikipedia/en/6/60/Neutral_Milk_Hotel_-_In_the_Aeroplane_Over_the_Sea.jpg" alt="Mystery Album" className={`w-full h-full object-cover transition-all duration-1000 ${isRevealed ? 'blur-0 scale-100' : 'blur-xl scale-125 grayscale'}`} />
-                  {!isRevealed && <div className="absolute inset-0 flex items-center justify-center"><HelpCircle size={48} className="text-white/50 drop-shadow-xl" /></div>}
-                </div>
-                <div className="flex flex-col flex-1 justify-center">
-                  {!isRevealed ? (
-                    <>
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        <span className="px-2.5 py-1 rounded-md bg-white/5 text-xs font-body text-secondary border border-white/10">#AcústicoEstranho</span>
-                        <span className="px-2.5 py-1 rounded-md bg-white/5 text-xs font-body text-secondary border border-white/10">#ClássicoIndie</span>
+            {/* CAIXA DE RESULTADOS DO SPOTIFY */}
+            {searchQuery && (
+              <div className="absolute top-full left-0 right-0 mt-4 bg-[#0a0a0a]/95 backdrop-blur-xl border border-white/10 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden animate-in fade-in slide-in-from-top-4">
+                {isSearching ? (
+                  <div className="p-8 flex items-center justify-center gap-3 text-secondary font-bold">
+                    <Disc3 className="animate-spin text-accent" size={24} /> A pesquisar no Catálogo Global...
+                  </div>
+                ) : searchResults.length > 0 ? (
+                  <div className="flex flex-col max-h-[400px] overflow-y-auto scrollbar-hide p-2">
+                    {searchResults.map((album) => (
+                      <div key={album.id} onClick={() => onSelectAlbum(album)} className="flex items-center gap-4 p-4 hover:bg-surface rounded-2xl transition-colors cursor-pointer group">
+                        <img src={album.images[0]?.url || album.images[1]?.url} className="w-14 h-14 rounded-lg shadow-lg object-cover group-hover:scale-105 transition-transform" alt={album.name} />
+                        <div className="flex-1">
+                          <h4 className="text-white font-black text-lg truncate leading-tight">{album.name}</h4>
+                          <p className="text-secondary text-sm font-bold truncate mt-1">{album.artists[0]?.name} • <span className="text-white/40">{album.release_date.substring(0, 4)}</span></p>
+                        </div>
+                        <button className="bg-white/5 group-hover:bg-accent text-white p-3 rounded-full transition-colors opacity-0 group-hover:opacity-100 -translate-x-4 group-hover:translate-x-0 duration-300">
+                          <ArrowRight size={18} />
+                        </button>
                       </div>
-                      <button onClick={() => setIsRevealed(true)} className="bg-white text-black px-6 py-2.5 rounded-full font-bold font-body text-sm hover:bg-gray-200 transition-colors w-fit">Revelar Álbum</button>
-                    </>
-                  ) : (
-                    <div className="animate-in fade-in duration-700">
-                      <h3 className="text-2xl font-heading font-bold text-primary mb-1">In the Aeroplane Over the Sea</h3>
-                      <button className="text-accent flex items-center gap-1 text-sm font-bold mt-2 hover:text-white transition-colors">Avaliar agora <ChevronRight size={16} /></button>
-                    </div>
-                  )}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-8 text-center flex flex-col items-center gap-2">
+                    <span className="text-4xl">🫙</span>
+                    <p className="text-secondary font-bold">Nenhum álbum encontrado para "{searchQuery}".</p>
+                  </div>
+                )}
               </div>
-            </section>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 border-t border-white/5 pt-8">
-            <div className="md:col-span-2 relative rounded-2xl bg-gradient-to-r from-red-900/40 to-black border border-red-500/20 p-6 md:p-8 flex flex-col items-start justify-center overflow-hidden group">
-              <Zap className="absolute -right-10 -bottom-10 w-64 h-64 text-red-500/10 group-hover:scale-110 transition-transform duration-700 rotate-12" strokeWidth={1} />
-              <div className="relative z-10">
-                <h3 className="flex items-center gap-2 text-2xl font-heading font-black text-red-400 mb-2">
-                  <Zap size={24} fill="currentColor" /> Destrua seu Algoritmo
-                </h3>
-                <p className="text-secondary font-body text-sm md:text-base mb-6 max-w-md">
-                  A plataforma detectou que você ouve muito "Hip-Hop Alternativo". Que tal sair da zona de conforto com algo brutalmente diferente?
-                </p>
-                <button className="bg-red-600 hover:bg-red-500 text-white px-6 py-3 rounded-xl font-bold font-body text-sm transition-all shadow-[0_0_20px_rgba(220,38,38,0.4)] hover:shadow-[0_0_30px_rgba(220,38,38,0.6)]">
-                  Gerar Antítese Musical
-                </button>
-              </div>
+          <div className="bg-red-950/30 border border-red-500/30 rounded-2xl p-3 flex items-center gap-4 overflow-hidden relative">
+            <div className="flex items-center gap-2 text-red-500 font-black uppercase tracking-widest text-xs shrink-0 z-10 bg-background/50 px-2 rounded backdrop-blur-sm">
+              <Flame size={16} className="animate-pulse" /> Radar Ao Vivo
             </div>
-
-            <div className="rounded-2xl border border-white/5 bg-transparent p-6 flex flex-col items-center justify-center text-center gap-4 hover:bg-white/[0.02] transition-colors">
-              <div className="p-4 rounded-full bg-white/5 text-primary/60">
-                <Wind size={32} strokeWidth={1.5} />
-              </div>
-              <div>
-                <h3 className="text-lg font-heading font-bold text-primary/80 mb-1">Limpador de Paladar</h3>
-                <p className="text-xs font-body text-secondary mb-4">Fadiga auditiva? Reinicie seus ouvidos com texturas ambientes.</p>
-                <button className="border border-white/10 text-primary/80 px-4 py-2 rounded-full font-body text-xs hover:bg-white/10 transition-colors">
-                  Iniciar Sessão Zen
-                </button>
-              </div>
+            <div className="flex-1 whitespace-nowrap overflow-hidden relative">
+              <p key={activeHotTake} className="text-sm font-bold text-red-100 animate-in slide-in-from-bottom-4 fade-in duration-500">{hotTakes[activeHotTake]}</p>
             </div>
-          </div>
-
-        </div>
-      )}
-
-      {/* ========================================= */}
-      {/* ABA 2: SOCIAL & FEED                      */}
-      {/* ========================================= */}
-      {activeTab === 'social' && (
-        <div className="flex flex-col gap-6 md:gap-8 animate-in fade-in duration-500">
-           <div className="w-full relative rounded-2xl bg-gradient-to-r from-yellow-900/40 via-yellow-600/10 to-transparent border border-yellow-500/30 p-4 md:p-6 flex items-center gap-4 md:gap-6 shadow-[0_0_30px_rgba(234,179,8,0.1)] overflow-hidden group cursor-pointer">
-            <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-yellow-500/20 to-transparent blur-2xl group-hover:from-yellow-500/30 transition-all" />
-            <div className="relative w-16 h-16 md:w-20 md:h-20 shrink-0 rounded-lg overflow-hidden border-2 border-yellow-400 shadow-[0_0_15px_rgba(234,179,8,0.5)]">
-              <img src="https://upload.wikimedia.org/wikipedia/en/a/ae/Daft_Punk_-_Discovery.jpg" className="w-full h-full object-cover" alt="Discovery" />
-              <div className="absolute -top-2 -right-2 bg-yellow-400 text-black p-1 rounded-full"><Crown size={14} /></div>
-            </div>
-            <div className="flex-1 z-10">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-yellow-400 font-heading font-bold text-xs uppercase tracking-wider animate-pulse">🚨 Promoção de Tier</span>
-              </div>
-              <p className="text-primary font-body text-sm md:text-base">
-                <strong>@marina_sounds</strong> acabou de elevar <span className="text-yellow-400 font-bold">Discovery</span> para o glorioso <strong>S-Tier</strong>!
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
-            <div className="lg:col-span-1 flex flex-col gap-6">
-              
-              <div className="bg-surface/40 border border-orange-500/20 rounded-2xl p-5 flex flex-col gap-4 relative overflow-hidden">
-                <Flame className="absolute -right-4 -top-4 w-32 h-32 text-orange-500/10" strokeWidth={1} />
-                <div className="flex items-center gap-2 text-orange-500 mb-2"><Activity size={18} /><h3 className="font-heading font-bold text-sm uppercase tracking-wide">Radar de Obsessão</h3></div>
-                <div className="flex items-center gap-4 z-10">
-                  <img src="https://upload.wikimedia.org/wikipedia/en/5/51/Igor_-_Tyler%2C_the_Creator.jpg" className="w-14 h-14 rounded shadow-lg" alt="Igor" />
-                  <div><p className="text-primary font-body text-sm leading-tight"><strong>@lucas_dev</strong> ouviu <em>IGOR</em> <strong>14 vezes</strong> nas últimas 48 horas.</p></div>
-                </div>
-              </div>
-
-              <div className="bg-surface/40 border border-purple-500/20 rounded-2xl p-5 flex items-center gap-4 group cursor-pointer hover:bg-surface/60 transition-colors">
-                <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center border border-purple-500/50 group-hover:scale-110 transition-transform"><Trophy size={20} className="text-purple-400" /></div>
-                <div><p className="text-xs text-purple-400 font-heading uppercase font-bold mb-0.5">Nova Conquista</p><p className="text-primary font-body text-sm"><strong>@joaovitor</strong> desbloqueou <span className="text-purple-300 font-bold">Mestre do Jazz</span>.</p></div>
-              </div>
-
-              <div className="bg-surface/40 border border-white/5 rounded-2xl p-5 flex flex-col gap-4">
-                <div className="flex items-center gap-2 text-accent mb-2"><GitMerge size={18} /><h3 className="font-heading font-bold text-sm uppercase tracking-wide">Efeito Borboleta</h3></div>
-                <p className="text-secondary font-body text-xs mb-3">Sua resenha gerou uma reação em cadeia:</p>
-                <div className="flex items-center justify-between px-2">
-                  <div className="flex flex-col items-center gap-1"><img src="https://images.unsplash.com/photo-1618609377864-6a5f65ce5737?q=80&w=100&auto=format&fit=crop" className="w-8 h-8 rounded-full border border-accent" alt="Você" /><span className="text-[10px] text-primary">Você</span></div>
-                  <div className="h-[1px] flex-1 bg-gradient-to-r from-accent to-blue-500 mx-2 relative"><div className="absolute -top-1.5 left-1/2 -translate-x-1/2 bg-surface px-1"><ArrowRight size={12} className="text-secondary" /></div></div>
-                  <div className="flex flex-col items-center gap-1"><img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=100&auto=format&fit=crop" className="w-8 h-8 rounded-full border border-blue-500" alt="Ana" /><span className="text-[10px] text-primary">Ana (Ouviu hoje)</span></div>
-                </div>
-              </div>
-
-            </div>
-
-            <div className="lg:col-span-2 flex flex-col h-full">
-              <div className="bg-surface border border-white/10 rounded-2xl p-6 md:p-8 flex flex-col h-full relative overflow-hidden">
-                <div className="flex items-center justify-between mb-8 z-10">
-                  <div className="flex items-center gap-2 text-red-400"><Swords size={20} /><h3 className="font-heading font-black text-lg uppercase tracking-wider">O Debate da Semana</h3></div>
-                  <span className="text-xs font-body text-secondary bg-white/5 px-3 py-1 rounded-full">Hot Take</span>
-                </div>
-                <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-12 flex-1 z-10">
-                  <div className="flex flex-col items-center md:items-end text-center md:text-right gap-3 flex-1">
-                    <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=100&auto=format&fit=crop" className="w-10 h-10 rounded-full border border-accent" alt="User" />
-                    <div className="flex text-accent"><Star size={14} fill="currentColor"/><Star size={14} fill="currentColor"/><Star size={14} fill="currentColor"/><Star size={14} fill="currentColor"/><Star size={14} fill="currentColor"/></div>
-                    <p className="text-primary font-body text-sm italic">"A maior obra-prima do século. Produção impecável e letras profundas."</p>
-                    <span className="text-xs text-secondary font-bold">@carlos_m</span>
-                  </div>
-                  <div className="relative shrink-0 flex flex-col items-center">
-                    <div className="w-32 h-32 md:w-40 md:h-40 rounded-xl shadow-2xl overflow-hidden border-2 border-white/10 z-10"><img src="https://upload.wikimedia.org/wikipedia/en/a/a7/Random_Access_Memories.jpg" className="w-full h-full object-cover" alt="RAM" /></div>
-                    <div className="absolute top-1/2 -translate-y-1/2 bg-background border border-white/10 w-12 h-12 rounded-full flex items-center justify-center font-heading font-black text-xl italic text-primary z-20 shadow-xl">VS</div>
-                  </div>
-                  <div className="flex flex-col items-center md:items-start text-center md:text-left gap-3 flex-1">
-                    <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=100&auto=format&fit=crop" className="w-10 h-10 rounded-full border border-red-500" alt="User" />
-                    <div className="flex text-red-500"><Star size={14} fill="currentColor"/><Star size={14} className="opacity-30"/><Star size={14} className="opacity-30"/><Star size={14} className="opacity-30"/><Star size={14} className="opacity-30"/></div>
-                    <p className="text-primary font-body text-sm italic">"Comercial demais. Abandonaram a essência eletrônica para fazer pop genérico."</p>
-                    <span className="text-xs text-secondary font-bold">@sofia_r</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
           </div>
         </div>
-      )}
 
-      {/* ========================================= */}
-      {/* ABA 3: AO VIVO                            */}
-      {/* ========================================= */}
-      {activeTab === 'aovivo' && (
-        <div className="flex flex-col gap-8 md:gap-12 animate-in fade-in duration-500">
+        {/* TRILHA SONORA DO CLIMA (ATUALIZADO PARA TERÇA-FEIRA DE MANHÃ) */}
+        <section className="relative w-full bg-gradient-to-br from-amber-900/40 via-orange-900/20 to-background border border-amber-500/20 rounded-[2rem] p-8 md:p-12 overflow-hidden shadow-2xl flex flex-col md:flex-row items-center justify-between gap-8 group">
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30 mix-blend-overlay" />
+          <div className="absolute top-10 right-20 w-32 h-32 bg-amber-500/20 rounded-full blur-[80px] pointer-events-none group-hover:bg-amber-400/30 transition-colors" />
           
-          <section className="relative w-full rounded-2xl md:rounded-3xl overflow-hidden bg-gradient-to-r from-emerald-900/60 to-black border border-emerald-500/30 p-6 md:p-10 flex flex-col md:flex-row items-center gap-8 group">
-            <Radio className="absolute -right-10 -bottom-10 w-64 h-64 text-emerald-500/10 group-hover:scale-110 transition-transform duration-700" strokeWidth={1} />
-            <div className="relative flex-1 z-10">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold font-heading uppercase tracking-wider mb-4 border border-emerald-500/30 animate-pulse">
-                <Radio size={14} /> Ao Vivo Agora
-              </div>
-              <h2 className="text-3xl md:text-4xl font-heading font-black text-white mb-2">Rádio Pirata: O Ouro do Trip-Hop</h2>
-              <p className="text-emerald-100/80 font-body text-sm md:text-base max-w-xl mb-4">
-                <strong>@DJ_Shadowfax</strong> está a transmitir clássicos obscuros de Bristol. Junte-se a 24 ouvintes na sala e partilhe a *vibe*.
-              </p>
-              <div className="flex items-center gap-4 mb-6 bg-black/40 p-3 rounded-xl border border-white/5 w-fit">
-                <div className="w-10 h-10 rounded overflow-hidden">
-                  <img src="https://upload.wikimedia.org/wikipedia/en/e/e9/Massive_Attack_-_Mezzanine.png" alt="Playing" className="w-full h-full object-cover" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xs text-emerald-400 font-bold uppercase tracking-wider">A Tocar Agora</span>
-                  <span className="text-sm font-body text-primary font-medium">Teardrop - Massive Attack</span>
-                </div>
-              </div>
-              <button className="bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-3 rounded-full font-bold font-body text-sm transition-all shadow-[0_0_20px_rgba(16,185,129,0.4)] flex items-center gap-2">
-                <Headphones size={18} /> Entrar na Sala
-              </button>
+          <div className="relative z-10 max-w-xl">
+            <div className="flex items-center gap-2 text-amber-300 font-bold uppercase tracking-widest text-xs mb-4">
+              <Sun size={16} /> Atmosfera Atual
             </div>
-            <div className="relative shrink-0 text-center z-10 hidden md:block">
-              <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.3)] mb-3">
-                 <img src="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?q=80&w=200&auto=format&fit=crop" className="w-full h-full object-cover" alt="DJ" />
+            <h2 className="text-3xl md:text-5xl font-heading font-black text-white leading-tight mb-4">
+              Terça-feira de manhã na Baixada Fluminense?
+            </h2>
+            <p className="text-amber-100/80 font-body text-base md:text-lg">
+              O clima pede um Bossa Nova suave ou um Indie Acústico para começar o dia. Dê play nesta seleção matinal perfeita para acompanhar o café.
+            </p>
+            <button onClick={() => showToast('A reproduzir: Playlist Matinal ☕')} className="mt-6 bg-white text-amber-950 hover:bg-amber-50 px-6 py-3 rounded-full font-black text-sm flex items-center gap-2 transition-transform active:scale-95 shadow-lg">
+              <PlayCircle size={18} /> OUVIR AGORA
+            </button>
+          </div>
+          <div className="relative z-10 shrink-0 hidden md:block">
+            <div className="w-48 h-48 rounded-full border-4 border-amber-500/30 flex items-center justify-center p-2 relative animate-[spin_20s_linear_infinite]">
+              <div className="w-full h-full rounded-full border border-amber-400/50 flex items-center justify-center relative">
+                 <Disc3 size={100} className="text-amber-300/50" />
               </div>
-              <span className="text-sm font-bold text-emerald-300">@DJ_Shadowfax</span>
             </div>
-          </section>
+          </div>
+        </section>
 
-          <section className="flex flex-col gap-4">
-            <div className="flex items-center gap-2 text-primary border-b border-white/5 pb-2">
-              <PlayCircle className="text-accent" size={20} />
-              <h2 className="text-xl md:text-2xl font-heading font-bold">Agora na Vitrola</h2>
+        {/* LINHA 1: BOLSA DE HYPE & JOIA PERDIDA */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+          <section className="bg-surface border border-white/5 rounded-[2rem] p-6 lg:p-8 flex flex-col gap-6 lg:col-span-2 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none"><Activity size={120} /></div>
+            <div className="flex items-center justify-between relative z-10">
+              <h2 className="text-2xl font-heading font-black text-white flex items-center gap-2"><TrendingUp className="text-green-400" /> Bolsa de Hype</h2>
+              <span className="text-[10px] font-bold text-secondary uppercase bg-white/5 px-3 py-1 rounded-full">Atualizado agora</span>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                { user: 'Ana', track: 'Pink + White', artist: 'Frank Ocean', cover: 'https://upload.wikimedia.org/wikipedia/en/a/a0/Blonde_-_Frank_Ocean.jpeg' },
-                { user: 'Carlos', track: 'DNA.', artist: 'Kendrick Lamar', cover: 'https://upload.wikimedia.org/wikipedia/en/5/51/Kendrick_Lamar_-_Damn.png' },
-                { user: 'Maria', track: 'Brat', artist: 'Charli xcx', cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/e/ef/Charli_XCX_-_Brat.png/220px-Charli_XCX_-_Brat.png' },
-                { user: 'João', track: 'Get Lucky', artist: 'Daft Punk', cover: 'https://upload.wikimedia.org/wikipedia/en/a/a7/Random_Access_Memories.jpg' },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-3 bg-surface/30 p-3 rounded-xl border border-white/5 hover:bg-surface/50 transition-colors cursor-pointer group">
-                  <div className="relative w-12 h-12 rounded overflow-hidden shrink-0">
-                    <img src={item.cover} alt={item.track} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 relative z-10">
+              {hypeMarket.map((album) => (
+                <div key={album.id} onClick={() => onSelectAlbum(album.mockData)} className="bg-black/40 border border-white/5 rounded-2xl p-4 flex flex-col gap-4 hover:border-white/20 transition-colors cursor-pointer group">
+                  <div className="flex justify-between items-start">
+                    <img src={album.cover} className="w-16 h-16 rounded-xl shadow-lg group-hover:scale-105 transition-transform object-cover" alt={album.title} />
+                    <div className={`flex items-center gap-1 text-xs font-black px-2 py-1 rounded-lg ${album.trend === 'up' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                      {album.trend === 'up' ? <TrendingUp size={14} /> : <TrendingDown size={14} />} {album.percent}
+                    </div>
                   </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-[10px] text-accent font-bold uppercase tracking-wider">{item.user} está ouvindo</span>
-                    <span className="text-sm font-heading font-bold text-primary truncate">{item.track}</span>
-                    <span className="text-xs font-body text-secondary truncate">{item.artist}</span>
-                  </div>
+                  <div><h3 className="text-base font-bold text-white truncate">{album.title}</h3><p className="text-xs text-secondary truncate">{album.artist}</p></div>
                 </div>
               ))}
             </div>
           </section>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="bg-surface border border-white/10 rounded-2xl p-6 flex flex-col gap-4">
-              <div className="flex items-center gap-2 text-primary border-b border-white/5 pb-2"><Ticket className="text-blue-400" size={20} /><h3 className="text-lg font-heading font-bold">Clube do Disco</h3></div>
-              <div className="flex items-center gap-6 mt-2">
-                <div className="w-24 h-24 rounded-lg shadow-xl overflow-hidden shrink-0"><img src="https://upload.wikimedia.org/wikipedia/en/3/3b/Dark_Side_of_the_Moon.png" alt="Dark Side" className="w-full h-full object-cover" /></div>
-                <div className="flex flex-col">
-                  <span className="text-blue-400 font-bold text-xs uppercase mb-1">Hoje às 21:00</span>
-                  <h4 className="text-lg font-heading font-bold text-primary">The Dark Side of the Moon</h4>
-                  <p className="text-sm text-secondary font-body mb-3">Audição sincronizada. Aperte o play junto com a comunidade.</p>
-                  <button className="bg-blue-600/20 text-blue-400 border border-blue-500/30 px-4 py-2 rounded-full text-xs font-bold w-fit hover:bg-blue-600/30 transition-colors">Confirmar Presença</button>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-surface border border-white/10 rounded-2xl p-6 flex flex-col gap-4">
-              <div className="flex items-center justify-between border-b border-white/5 pb-2">
-                <div className="flex items-center gap-2 text-primary"><TrendingUp className="text-accent" size={20} /><h3 className="text-lg font-heading font-bold">Cápsula de Apostas</h3></div>
-                <span className="text-xs bg-white/5 px-2 py-1 rounded-md text-secondary">Dropa sexta</span>
-              </div>
-              <p className="text-sm text-primary font-body font-medium">O próximo álbum do <strong>The Weeknd</strong> vai ser...</p>
-              <div className="flex flex-col gap-2 mt-2">
-                <button className="relative w-full bg-white/5 border border-white/10 p-3 rounded-lg text-left overflow-hidden group hover:border-accent/50 transition-colors">
-                  <div className="absolute left-0 top-0 bottom-0 bg-accent/20 w-[70%] z-0" />
-                  <span className="relative z-10 text-sm font-bold text-primary flex justify-between">Obra-prima <span className="text-accent">70%</span></span>
-                </button>
-                <button className="relative w-full bg-white/5 border border-white/10 p-3 rounded-lg text-left overflow-hidden group hover:border-red-500/50 transition-colors">
-                  <div className="absolute left-0 top-0 bottom-0 bg-red-500/20 w-[10%] z-0" />
-                  <span className="relative z-10 text-sm font-bold text-primary flex justify-between">Flop <span className="text-red-400">10%</span></span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================= */}
-      {/* ABA 4: O LABORATÓRIO                      */}
-      {/* ========================================= */}
-      {activeTab === 'lab' && (
-        <div className="flex flex-col gap-8 md:gap-12 animate-in fade-in duration-500">
-          
-          <div className="bg-surface/30 border border-white/10 rounded-2xl p-6 md:p-8 flex items-center justify-between">
-             <div>
-               <h2 className="text-xl md:text-2xl font-heading font-bold text-primary flex items-center gap-2">
-                 <FlaskConical className="text-accent" /> Bem-vindo ao Laboratório
-               </h2>
-               <p className="text-secondary font-body mt-2 text-sm md:text-base">
-                 Visualização avançada de dados musicais. Explore as conexões ocultas da indústria.
-               </p>
+          <section onClick={() => onSelectAlbum(joiaPerdidaData)} className="bg-gradient-to-tr from-emerald-950/50 to-surface border border-emerald-500/30 rounded-[2rem] p-6 lg:p-8 flex flex-col items-center justify-center text-center relative overflow-hidden group col-span-1 shadow-[0_0_30px_rgba(16,185,129,0.05)] cursor-pointer">
+             <div className="absolute inset-0 bg-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity blur-2xl" />
+             <div className="flex items-center gap-2 text-emerald-400 mb-4 z-10">
+               <Sparkles size={20} className="animate-pulse" />
+               <h2 className="text-xl font-heading font-black">Joia Perdida</h2>
              </div>
-          </div>
+             <div className="relative z-10 transform transition-transform group-hover:scale-105 group-hover:-rotate-2">
+               <img src={joiaPerdidaData.images[0].url} className="w-32 h-32 rounded-lg shadow-2xl border-2 border-emerald-500/50 object-cover" alt="Long Season" />
+               <div className="absolute -bottom-3 -right-3 bg-emerald-900 border border-emerald-500 text-emerald-400 text-[10px] font-black px-2 py-1 rounded-full flex items-center gap-1">
+                 <Star size={10} fill="currentColor"/> 4.9
+               </div>
+             </div>
+             <div className="mt-6 z-10">
+               <h3 className="text-lg font-black text-white group-hover:text-emerald-400 transition-colors">Long Season</h3>
+               <p className="text-xs text-secondary">Fishmans • 1996 • Dream Pop</p>
+             </div>
+          </section>
+        </div>
 
-          <div className="bg-[#050505] border border-white/5 rounded-3xl p-6 md:p-10 relative overflow-hidden min-h-[400px] md:min-h-[500px] flex flex-col items-center justify-center group">
-            <div className="absolute top-6 left-6 md:top-8 md:left-8 z-20">
-               <h3 className="text-lg md:text-xl font-heading font-bold text-white flex items-center gap-2">
-                 <Network className="text-blue-400" /> Constelação Sonora
-               </h3>
-               <p className="text-xs text-secondary mt-1 uppercase tracking-widest">Grafo de Produção</p>
+        {/* LINHA 2: RADAR DE LANÇAMENTOS (LIGADO À API) & QUEBRA-BOLHAS */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+          <section className="bg-surface border border-white/5 rounded-[2rem] p-6 lg:p-8 flex flex-col gap-6 col-span-1 lg:col-span-2 shadow-xl relative overflow-hidden">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-heading font-black text-white flex items-center gap-2">
+                <Target className="text-blue-400" /> Radar de Lançamentos
+              </h2>
+              <span className="text-[10px] text-blue-400 font-bold uppercase bg-blue-500/10 px-3 py-1 rounded-full flex items-center gap-1">
+                <Radio size={12} className="animate-pulse" /> Ao Vivo do Spotify
+              </span>
             </div>
-
-            <div className="relative w-full max-w-2xl aspect-square md:aspect-video mt-10 md:mt-0">
-              <svg className="absolute inset-0 w-full h-full z-10 pointer-events-none">
-                 <line x1="50%" y1="50%" x2="20%" y2="20%" stroke="rgba(59,130,246,0.3)" strokeWidth="2" strokeDasharray="4 4" className="animate-pulse" />
-                 <line x1="50%" y1="50%" x2="80%" y2="30%" stroke="rgba(59,130,246,0.3)" strokeWidth="2" />
-                 <line x1="50%" y1="50%" x2="30%" y2="80%" stroke="rgba(59,130,246,0.3)" strokeWidth="2" />
-                 <line x1="50%" y1="50%" x2="70%" y2="70%" stroke="rgba(59,130,246,0.3)" strokeWidth="2" />
-              </svg>
-
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 flex flex-col items-center cursor-pointer hover:scale-110 transition-transform">
-                 <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Rick_Rubin_2016.jpg/800px-Rick_Rubin_2016.jpg" className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover border-4 border-blue-500 shadow-[0_0_40px_rgba(59,130,246,0.6)]" alt="Rick Rubin" />
-                 <span className="mt-2 text-xs font-bold text-white bg-black/80 px-3 py-1.5 rounded-full border border-white/10">Rick Rubin</span>
+            
+            {isLoadingRadar ? (
+              <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                {[1, 2, 3, 4].map((s) => (
+                  <div key={s} className="min-w-[140px] flex flex-col gap-3 animate-pulse"><div className="w-full aspect-square bg-white/5 rounded-2xl" /><div className="w-3/4 h-4 bg-white/5 rounded" /></div>
+                ))}
               </div>
-
-              <div className="absolute top-[20%] left-[20%] -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center cursor-pointer hover:-translate-y-2 transition-transform group/node">
-                 <img src="https://upload.wikimedia.org/wikipedia/en/3/31/Red_Hot_Chili_Peppers_-_Blood_Sugar_Sex_Magik.jpg" className="w-14 h-14 md:w-16 md:h-16 rounded-full object-cover border-2 border-white/20 group-hover/node:border-blue-400 transition-colors shadow-lg" alt="BSSM" />
-                 <span className="mt-2 text-[10px] text-secondary opacity-0 group-hover/node:opacity-100 transition-opacity bg-black/80 px-2 py-1 rounded">Blood Sugar Sex Magik</span>
-              </div>
-
-              <div className="absolute top-[30%] left-[80%] -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center cursor-pointer hover:-translate-y-2 transition-transform group/node">
-                 <img src="https://upload.wikimedia.org/wikipedia/en/8/87/Johnny_Cash_-_American_IV_-_The_Man_Comes_Around.jpg" className="w-14 h-14 md:w-16 md:h-16 rounded-full object-cover border-2 border-white/20 group-hover/node:border-blue-400 transition-colors shadow-lg" alt="Cash" />
-                 <span className="mt-2 text-[10px] text-secondary opacity-0 group-hover/node:opacity-100 transition-opacity bg-black/80 px-2 py-1 rounded">American IV</span>
-              </div>
-
-              <div className="absolute top-[80%] left-[30%] -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center cursor-pointer hover:-translate-y-2 transition-transform group/node">
-                 <img src="https://upload.wikimedia.org/wikipedia/en/6/64/SystemoftheDownToxicityalbumcover.jpg" className="w-14 h-14 md:w-16 md:h-16 rounded-full object-cover border-2 border-white/20 group-hover/node:border-blue-400 transition-colors shadow-lg" alt="SOAD" />
-                 <span className="mt-2 text-[10px] text-secondary opacity-0 group-hover/node:opacity-100 transition-opacity bg-black/80 px-2 py-1 rounded">Toxicity</span>
-              </div>
-
-              <div className="absolute top-[70%] left-[70%] -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center cursor-pointer hover:-translate-y-2 transition-transform group/node">
-                 <img src="https://upload.wikimedia.org/wikipedia/en/2/22/Jay-Z_-_The_Black_Album.jpg" className="w-14 h-14 md:w-16 md:h-16 rounded-full object-cover border-2 border-white/20 group-hover/node:border-blue-400 transition-colors shadow-lg" alt="Jay-Z" />
-                 <span className="mt-2 text-[10px] text-secondary opacity-0 group-hover/node:opacity-100 transition-opacity bg-black/80 px-2 py-1 rounded">The Black Album</span>
-              </div>
-
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-             <div className="bg-surface border border-white/10 rounded-2xl p-6 md:p-8 flex flex-col gap-6 items-center">
-                <div className="w-full flex items-center gap-2 text-primary border-b border-white/5 pb-3">
-                  <Database className="text-purple-400" size={20} />
-                  <h3 className="text-lg font-heading font-bold">Cofre de Samples</h3>
-                </div>
-
-                <div className="flex flex-col items-center gap-4 w-full max-w-xs">
-                  <div className="flex items-center gap-4 w-full bg-white/5 border border-white/10 p-3 rounded-xl">
-                    <img src="https://upload.wikimedia.org/wikipedia/en/a/ae/Daft_Punk_-_Discovery.jpg" className="w-12 h-12 rounded shadow" alt="Discovery" />
-                    <div className="flex flex-col">
-                      <span className="text-sm font-bold text-primary truncate">Harder, Better, Faster...</span>
-                      <span className="text-xs text-secondary">Daft Punk (2001)</span>
+            ) : (
+              <div className="flex overflow-x-auto pb-4 gap-4 scrollbar-hide snap-x">
+                {radarReleases.map((album) => (
+                  <div key={album.id} onClick={() => onSelectAlbum(album)} className="min-w-[140px] max-w-[140px] flex flex-col gap-3 snap-start group cursor-pointer">
+                    <div className="relative overflow-hidden rounded-2xl aspect-square shadow-lg border border-white/5 group-hover:border-blue-500/50 transition-colors">
+                      <img src={album.images[0]?.url || album.images[1]?.url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={album.name} />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                         <PlayCircle size={32} className="text-white" />
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-white truncate group-hover:text-blue-400 transition-colors">{album.name}</h3>
+                      <p className="text-[10px] text-secondary truncate">{album.artists[0]?.name}</p>
                     </div>
                   </div>
+                ))}
+              </div>
+            )}
+          </section>
 
-                  <ArrowDown size={20} className="text-purple-400/50" />
-
-                  <div className="flex items-center gap-4 w-full bg-purple-900/20 border border-purple-500/30 p-3 rounded-xl">
-                    <img src="https://upload.wikimedia.org/wikipedia/en/2/2d/Cola_Bottle_Baby_Edwin_Birdsong.jpg" className="w-12 h-12 rounded shadow" alt="Edwin" />
-                    <div className="flex flex-col">
-                      <span className="text-xs text-purple-400 font-bold uppercase tracking-wider mb-0.5">Sample Original</span>
-                      <span className="text-sm font-bold text-white truncate">Cola Bottle Baby</span>
-                      <span className="text-xs text-purple-200/70">Edwin Birdsong (1979)</span>
-                    </div>
-                  </div>
-                </div>
-             </div>
-
-             <div className="bg-surface border border-white/10 rounded-2xl p-6 md:p-8 flex flex-col gap-6">
-                <div className="w-full flex items-center gap-2 text-primary border-b border-white/5 pb-3">
-                  <GitCommit className="text-green-400" size={20} />
-                  <h3 className="text-lg font-heading font-bold">6 Graus de Separação</h3>
-                </div>
-
-                <p className="text-xs text-secondary text-center">Conectando <strong>Paul McCartney</strong> a <strong>Kendrick Lamar</strong></p>
-
-                <div className="flex flex-col gap-2 relative mt-4">
-                  <div className="absolute left-6 top-6 bottom-6 w-0.5 bg-gradient-to-b from-green-500/20 via-green-500/50 to-green-500/20" />
-                  
-                  <div className="flex items-center gap-4 z-10 relative">
-                    <div className="w-12 h-12 rounded-full border-2 border-surface bg-surface shadow-lg overflow-hidden shrink-0"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Paul_McCartney_2021_%28cropped%29.jpg/800px-Paul_McCartney_2021_%28cropped%29.jpg" className="w-full h-full object-cover" alt="Paul" /></div>
-                    <span className="text-sm font-bold text-primary">Paul McCartney</span>
-                  </div>
-                  
-                  <div className="pl-14 py-1 text-xs text-green-400/80 italic flex items-center gap-2"><MoveRight size={12}/> Tocou em "FourFiveSeconds" com...</div>
-
-                  <div className="flex items-center gap-4 z-10 relative">
-                    <div className="w-12 h-12 rounded-full border-2 border-surface bg-surface shadow-lg overflow-hidden shrink-0"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Kanye_West_at_the_2009_Tribeca_Film_Festival-2_%28cropped%29.jpg/800px-Kanye_West_at_the_2009_Tribeca_Film_Festival-2_%28cropped%29.jpg" className="w-full h-full object-cover" alt="Kanye" /></div>
-                    <span className="text-sm font-bold text-primary">Kanye West</span>
-                  </div>
-
-                  <div className="pl-14 py-1 text-xs text-green-400/80 italic flex items-center gap-2"><MoveRight size={12}/> Produziu e cantou em "No More Parties in LA" com...</div>
-
-                  <div className="flex items-center gap-4 z-10 relative">
-                    <div className="w-12 h-12 rounded-full border-2 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)] overflow-hidden shrink-0"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/Pulitzer2018-portraits-kendrick-lamar.jpg/800px-Pulitzer2018-portraits-kendrick-lamar.jpg" className="w-full h-full object-cover" alt="Kendrick" /></div>
-                    <span className="text-sm font-bold text-white">Kendrick Lamar</span>
-                  </div>
-                </div>
-             </div>
-
-          </div>
+          <section className="bg-gradient-to-br from-indigo-900/40 to-surface border border-indigo-500/30 rounded-[2rem] p-6 lg:p-8 flex flex-col items-center justify-center text-center relative overflow-hidden group col-span-1">
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10" />
+            {!comfortZoneBroken ? (
+              <div className="flex flex-col items-center gap-4 relative z-10">
+                <div className="w-16 h-16 bg-indigo-500/20 rounded-full flex items-center justify-center mb-2"><AlertTriangle size={32} className="text-indigo-400" /></div>
+                <div><h2 className="text-xl font-heading font-black text-white">Quebra-Bolhas</h2><p className="text-xs text-secondary mt-2 max-w-[200px]">O seu DNA é 70% Sintético. Clique para ouvir o oposto.</p></div>
+                <button onClick={() => setComfortZoneBroken(true)} className="mt-4 bg-indigo-500 hover:bg-indigo-400 text-white px-6 py-3 rounded-full font-black text-sm transition-all shadow-[0_0_20px_rgba(99,102,241,0.4)] flex items-center gap-2 active:scale-95"><Zap size={16} fill="currentColor" /> DESTRUIR ALGORITMO</button>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-4 relative z-10 animate-in zoom-in duration-500">
+                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">A Sua Nova Obsessão</span>
+                <img src={quebraBolhasData.images[0].url} onClick={() => onSelectAlbum(quebraBolhasData)} className="w-32 h-32 rounded-2xl shadow-2xl border-4 border-indigo-500/30 cursor-pointer hover:scale-105 transition-transform object-cover" alt="Fleet Foxes" />
+                <div><h3 className="text-xl font-black text-white cursor-pointer hover:text-indigo-400" onClick={() => onSelectAlbum(quebraBolhasData)}>Fleet Foxes</h3><p className="text-xs text-secondary">Folk Acústico • 2008</p></div>
+                <button onClick={() => setComfortZoneBroken(false)} className="text-xs text-secondary hover:text-white underline mt-2">Restaurar Bolha</button>
+              </div>
+            )}
+          </section>
         </div>
-      )}
 
+        {/* LINHA 3: ALQUIMIA SONORA & NESTE DIA */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+          <section className="bg-surface border border-white/5 rounded-[2rem] p-6 lg:p-8 flex flex-col gap-6 col-span-1 lg:col-span-2 shadow-xl">
+            <div className="flex items-center gap-2"><FlaskConical className="text-pink-500" size={24} /><h2 className="text-2xl font-heading font-black text-white">Alquimia Sonora</h2></div>
+            <p className="text-sm text-secondary font-body -mt-4">Misture dois géneros incompatíveis e veja o resultado.</p>
+            <div className="flex flex-col md:flex-row items-center gap-4 w-full bg-black/40 p-6 rounded-3xl border border-white/5">
+              <select className="flex-1 w-full bg-surface border border-white/10 rounded-xl px-4 py-3 text-white font-bold focus:outline-none focus:border-pink-500 text-center"><option>Bossa Nova</option><option>Jazz</option></select>
+              <div className="bg-pink-500/20 p-3 rounded-full shrink-0"><Shuffle className="text-pink-500" size={20} /></div>
+              <select className="flex-1 w-full bg-surface border border-white/10 rounded-xl px-4 py-3 text-white font-bold focus:outline-none focus:border-pink-500 text-center"><option>Metal Industrial</option><option>Hyperpop</option></select>
+              <button onClick={() => { setIsMixing(true); setMixedResult(false); setTimeout(() => { setIsMixing(false); setMixedResult(true); }, 1500); }} disabled={isMixing} className="w-full md:w-auto bg-pink-500 hover:bg-pink-400 disabled:bg-pink-900/50 text-white px-8 py-3 rounded-xl font-black transition-all shadow-[0_0_15px_rgba(236,72,153,0.4)]">
+                {isMixing ? 'A MISTURAR...' : 'FUNDIR'}
+              </button>
+            </div>
+            {mixedResult && (
+              <div onClick={() => onSelectAlbum(alquimiaData)} className="mt-2 flex items-center gap-4 bg-pink-950/20 border border-pink-500/20 p-4 rounded-2xl animate-in slide-in-from-top-4 fade-in duration-500 cursor-pointer hover:bg-pink-900/30 transition-colors group">
+                <img src={alquimiaData.images[0].url} className="w-16 h-16 rounded-lg object-cover" alt="Sunbather" />
+                <div className="flex-1"><span className="text-[10px] font-black text-pink-400 uppercase tracking-widest">Resultado da Mutação:</span><h3 className="text-lg font-black text-white group-hover:text-pink-300 transition-colors">Sunbather - Deafheaven</h3></div>
+                <button className="hidden sm:flex text-pink-400 group-hover:bg-pink-500 group-hover:text-white transition-colors p-2 border border-pink-500/30 rounded-full"><ArrowRight size={20} /></button>
+              </div>
+            )}
+          </section>
+
+          <section onClick={() => onSelectAlbum(nesteDiaData)} className="bg-surface border border-white/5 rounded-[2rem] p-6 lg:p-8 flex flex-col justify-center text-center shadow-xl relative overflow-hidden group cursor-pointer hover:border-white/10 transition-colors">
+            <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none"><Calendar size={100} className="text-white" /></div>
+            <div className="relative z-10 flex flex-col items-center">
+              <div className="bg-white/10 p-2 rounded-full mb-4">
+                <Calendar size={20} className="text-white" />
+              </div>
+              <span className="text-xs font-bold text-secondary uppercase tracking-widest mb-1">Neste Dia na História</span>
+              <h2 className="text-3xl font-heading font-black text-white mb-6">10 de Março</h2>
+              <div className="relative group-hover:scale-105 transition-transform duration-500">
+                <img src={nesteDiaData.images[0].url} className="w-40 h-40 rounded-xl shadow-2xl mx-auto object-cover" alt="The Joshua Tree" />
+              </div>
+              <div className="mt-4">
+                <h3 className="text-lg font-black text-white group-hover:text-accent transition-colors">The Joshua Tree</h3>
+                <p className="text-xs text-secondary mt-1 max-w-[200px] mx-auto">Faz exatamente 39 anos que os U2 lançaram este marco do Rock Alternativo.</p>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        {/* LINHA 4: MIXTAPE E 6 GRAUS */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+          <section className="bg-[#1a1a1a] border-4 border-[#333] rounded-[2rem] p-6 lg:p-8 flex flex-col items-center text-center relative overflow-hidden shadow-2xl">
+            <h2 className="text-xl font-heading font-black text-white mb-2 flex items-center gap-2"><ListMusic className="text-yellow-500" /> Mixtape da Comunidade</h2>
+            <p className="text-xs text-secondary mb-8">Tema de Hoje: "Limpar a casa no Domingo"</p>
+            <div className="w-64 h-40 bg-white/90 rounded-xl border-8 border-gray-300 relative shadow-inner flex flex-col p-4 justify-between transform -rotate-2 hover:rotate-0 transition-transform">
+              <div className="w-full h-8 bg-gray-200 border-b-2 border-gray-300 flex items-center justify-center font-heading font-bold text-gray-800 italic" style={{ fontFamily: '"Comic Sans MS", cursive, sans-serif' }}>Domingueira 🧹</div>
+              <div className="flex justify-center gap-12 mt-4">
+                <div className="w-10 h-10 rounded-full bg-gray-800 border-4 border-gray-400 flex items-center justify-center animate-[spin_4s_linear_infinite]"><div className="w-3 h-3 bg-white rounded-full"/></div>
+                <div className="w-10 h-10 rounded-full bg-gray-800 border-4 border-gray-400 flex items-center justify-center animate-[spin_4s_linear_infinite]"><div className="w-3 h-3 bg-white rounded-full"/></div>
+              </div>
+            </div>
+            <button onClick={() => showToast('Adicionado à sua Mixtape com sucesso!')} className="mt-8 bg-yellow-500 text-black px-6 py-2 rounded-full font-black text-sm hover:bg-yellow-400 transition-colors flex items-center gap-2">
+               <Plus size={16} /> ADICIONAR FAIXA
+            </button>
+          </section>
+
+          <section className="bg-surface border border-white/5 rounded-[2rem] p-6 lg:p-8 flex flex-col gap-6 shadow-xl">
+            <h2 className="text-xl font-heading font-black text-white flex items-center gap-2"><GitCommit className="text-emerald-400" /> Os 6 Graus de Separação</h2>
+            <p className="text-sm text-secondary -mt-4">Encontre a ligação: <strong>Taylor Swift</strong> até ao <strong>Slipknot</strong>.</p>
+            <div className="flex flex-col gap-0 mt-4 relative">
+              <div className="absolute left-[19px] top-4 bottom-4 w-1 bg-white/5" />
+              {['Taylor Swift', 'Jack Antonoff', 'Lorde', 'David Bowie', 'Trent Reznor', 'Slipknot'].map((artist, idx) => (
+                <div key={idx} className="flex items-center gap-4 py-2 relative">
+                  <button onClick={() => { setPathRevealed(idx); showToast(`Ligação ${idx + 1} revelada!`); }} className={`w-10 h-10 rounded-full flex items-center justify-center z-10 transition-colors ${idx <= pathRevealed ? 'bg-emerald-500 text-black shadow-[0_0_15px_rgba(16,185,129,0.5)]' : 'bg-surface border-2 border-white/10 text-secondary hover:border-emerald-500 hover:text-emerald-500'}`}>
+                    {idx + 1}
+                  </button>
+                  <span className={`font-bold transition-opacity ${idx <= pathRevealed ? 'text-white opacity-100' : 'text-secondary opacity-30 blur-[2px]'}`}>{artist}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        {/* SECÇÃO FINAL: O CORTE DO DIRETOR */}
+        <section className="w-full bg-[#0a0a0a] border border-white/10 rounded-[2rem] p-8 md:p-12 lg:p-16 flex flex-col md:flex-row items-center gap-12 shadow-2xl overflow-hidden relative group">
+          <div className="absolute inset-0 bg-gradient-to-r from-red-900/10 to-transparent pointer-events-none" />
+          <div className="flex-1 flex flex-col z-10">
+            <div className="flex items-center gap-2 text-red-500 font-bold uppercase tracking-widest text-xs mb-4"><BookOpen size={16} /> O Corte do Diretor</div>
+            <h2 className="text-4xl md:text-6xl font-black text-white leading-none mb-6 font-serif tracking-tight">
+              A Engenharia de 'In Rainbows'.
+            </h2>
+            <p className="text-white/70 font-body text-lg mb-8 leading-relaxed max-w-lg">
+              Mergulhe no estúdio com os Radiohead. Descubra como a bateria foi gravada num hospital abandonado e como a banda redefiniu o lançamento na internet.
+            </p>
+           <button onClick={() => onNavigate('article')} className="bg-transparent border border-white/20 hover:border-white hover:bg-white/5 text-white px-8 py-3 rounded-full font-bold transition-all w-fit flex items-center gap-2">
+  <Bot size={18} /> Gerar Mergulho com IA
+</button>
+          </div>
+          <div 
+            className="relative w-64 h-64 md:w-80 md:h-80 shrink-0 z-10 perspective-[1000px] cursor-pointer"
+            onClick={() => onSelectAlbum({ name: "In Rainbows", artists: [{ name: "Radiohead" }], images: [{ url: "https://images.unsplash.com/photo-1557672199-6e8c8b2b8fff?w=300&q=80" }] })}
+          >
+            <img src="https://images.unsplash.com/photo-1557672199-6e8c8b2b8fff?w=300&q=80" className="w-full h-full object-cover rounded-xl shadow-2xl transform-gpu rotate-y-[-15deg] group-hover:rotate-y-0 transition-transform duration-700" alt="In Rainbows" />
+          </div>
+        </section>
+
+      </div>
     </main>
   );
 }
